@@ -31,41 +31,31 @@ float ** FilterAudio::combFilterBlock(float **input, int blockSize, int numChann
         output[i] = new float[blockSize];
     }
     
-    //Padding?
+//    float* test1 = input[0];
+
     
-    //Padded output
-    float **paddedOutput = new float *[numChannels];
-    
-    for (int i = 0; i < numChannels ; i ++)
-    {
-        paddedOutput[i] = new float[blockSize+(iDelayInSamples*2)];
-    }
-    //Padded input
-    float **paddedInput = new float *[numChannels];
-    
-    for (int i = 0; i < numChannels ; i ++)
-    {
-        paddedInput[i] = new float[blockSize+(iDelayInSamples*2)];
-        memcpy(&paddedInput[i][iDelayInSamples],input[i],blockSize * sizeof(float));
-    }
-    
+    float *fFIRDelay = new float [iDelayInSamples];
+    float *fIIRDelay = new float [iDelayInSamples];
     
     // Filter each channel
     for(int i = 0; i<numChannels; i++){
-        // Initial sample
-        for(int j = 0; j < iDelayInSamples; j++){
-            output[i][j] = input[i][j];
+        // Initialize delay lines
+        for(int k = 0; k < iDelayInSamples; k++){
+            fFIRDelay[k] = 0.0;
+            fIIRDelay[k] = 0.0;
         }
         
         // Perform filtering
-        for(int j = iDelayInSamples; j < blockSize+iDelayInSamples; j++){
-            paddedOutput[i][j] = input[i][j] + fFIRCoeff*input[i][j-iDelayInSamples] + fIIRCoeff*paddedOutput[i][j-iDelayInSamples];
+        for(int j = 0; j < blockSize; j++){
+            output[i][j] = input[i][j] + fFIRCoeff*fFIRDelay[iDelayInSamples-1] + fIIRCoeff*fIIRDelay[iDelayInSamples-1];
+            
+            for(int k = iDelayInSamples-1; k>0; k--){
+                fFIRDelay[k] = fFIRDelay[k-1];
+                fIIRDelay[k] = fIIRDelay[k-1];
+            }
+            fFIRDelay[0] = input[i][j];
+            fIIRDelay[0] = output[i][j];
         }
-    }
-    
-    for (int i = 0; i < numChannels ; i ++)
-    {
-        memcpy(output[i],&paddedOutput[i][iDelayInSamples],blockSize * sizeof(float));
     }
     
     return output;

@@ -69,15 +69,17 @@ void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNum
             
             //unblock
             for (int n=0; n<iNumChannels; n++) {
+                //Last block edge case
                 if (i==0) {
-                    memcpy(block[n], &input[n][0], (hopSize+iDelayLength) * sizeof(float));
+                    memcpy(&input[n][i*hopSize], block[n], (hopSize+iDelayLength) * sizeof(float));
                 }
-                else if (i*hopSize+iDelayLength+hopSize+iDelayLength > inputLength) {
-                    memcpy(block[n], &input[n][i*hopSize+iDelayLength], (inputLength-(i*hopSize+iDelayLength)) * sizeof(float)); //buggy - check again
-                }
+//                else if (i*hopSize+blockSize > inputLength) {
+//                    memcpy(&input[n][i*hopSize+iDelayLength], block[n], (inputLength-(i*hopSize+iDelayLength)) * sizeof(float));
+//                }
                 else {
-                    memcpy(&input[n][i*hopSize+iDelayLength], block[n], (hopSize+iDelayLength) * sizeof(float));
+                    memcpy(&input[n][i*hopSize+iDelayLength], &block[n][iDelayLength], (hopSize) * sizeof(float));
                 }
+                
             }
         }
             
