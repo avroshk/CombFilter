@@ -10,7 +10,6 @@ using std::endl;
 // local function declarations
 void    showClInfo ();
 
-/////////////////////////////////////////////////////////////////////////////////
 // main function
 int main(int argc, char* argv[])
 {
@@ -33,17 +32,16 @@ int main(int argc, char* argv[])
     
     showClInfo ();
     
-    //////////////////////////////////////////////////////////////////////////////
-    // parse command line arguments
+    // Parse command line arguments
     
-    // check argc
+    // Check argc
     if( argc == 4 ) {
         printf("Reading audio file %s\n", argv[1]);
         printf("\nFIR Coefficient %f",atof(argv[2]));
         printf("\nIIR Coefficient %f",atof(argv[3]));
         printf("\nDelay in milliseconds %i",atoi(argv[4]));
         
-        //Make sure gain is between -1 and 1, a number
+        // Make sure gain is between -1 and 1, a number
         
         // Check that delay time is positive and nonzero. Set upper and lower limit 0 - 100ms
         
@@ -57,19 +55,17 @@ int main(int argc, char* argv[])
         return 0;
     }
     
-    // get audio file name
+    // Get audio file name
     sInputFilePath = argv[1];
     fFIRCoeff = atof(argv[2]);
     fIIRCoeff = atof(argv[3]);
     iDelayInMSec = atoi(argv[4]);
     
-    //////////////////////////////////////////////////////////////////////////////
-    // open the input wave file
+    // Open the input wave file
     CAudioFileIf::create(phAudioFile);
     phAudioFile->openFile(sInputFilePath, CAudioFileIf::kFileRead, 0);
     
-    //////////////////////////////////////////////////////////////////////////////
-    // allocate memory
+    // Allocate memory
     phAudioFile->getLength(iInFileLength);
     phAudioFile->getFileSpec(aFileSpec);
     iNumChannels = aFileSpec.iNumChannels;
@@ -78,39 +74,25 @@ int main(int argc, char* argv[])
         ppfAudioData[i] = new float[iInFileLength];
     }
     
-    // get audio data
+    // Get audio data
     phAudioFile->readData(ppfAudioData, iInFileLength);
     
-    //////////////////////////////////////////////////////////////////////////////
-    // get audio info and print it to stdout
-    std::ofstream myfile;
-    myfile.open ("example.txt");
-    for(int i = 0; i < iNumChannels; i++){
-        for (int j = 0; j < iInFileLength; j++){
-            myfile << ppfAudioData[i][j];
-        }
-    }
-    myfile.close();
-    
-    //////////////////////////////////////////////////////////////////////////////
-    // do processing
+    // Do processing
     cout << "All Done!" << endl << endl;
     
-    //////////////////////////////////////////////////////////////////////////////
-    // clean-up
+    // Write processed audio to a wav file
+    phAudioFile->writeData (ppfAudioData, iInFileLength);
     
+    // Clean-up and free memory
     CAudioFileIf::destroy(phAudioFile);
     free(ppfAudioData);
     
     return 0;
-    
 }
 
-
-void     showClInfo()
+void showClInfo()
 {
     cout<<"Comb Filter ver1.0\n";
-    
     return;
 }
 

@@ -7,9 +7,9 @@
 //
 
 #include "ProcessAudio.h"
+
 #include <math.h>
 #include <algorithm>    // std::copy
-
 
 //constructor
 ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
