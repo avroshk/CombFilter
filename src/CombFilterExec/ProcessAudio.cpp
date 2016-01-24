@@ -7,7 +7,6 @@
 //
 
 #include "ProcessAudio.h"
-
 #include <math.h>
 #include <algorithm>    // std::copy
 
@@ -40,7 +39,7 @@ float** ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int i
     for (int i=0; i<iNumBlocks; i++) {
 
         for (int m=0; m<iNumChannels; m++) {
-            std::copy(input[m+i*blockSize],input[m+i*blockSize]+blockSize,&block[m]);
+            std::copy(input[m+i*blockSize],input[m+i*blockSize]+blockSize,block[m]);
         }
         
         //Call comb filter
