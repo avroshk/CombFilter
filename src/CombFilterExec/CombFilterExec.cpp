@@ -31,15 +31,17 @@ int main(int argc, char* argv[])
     clock_t                 time                = 0;
     float                   **ppfAudioData      = 0;
     CAudioFileIf            *phAudioFile        = 0;
+    CAudioFileIf            *phAudioFileOutput  = 0;
     int                     iNumChannels        = 1;
     CAudioFileIf::FileSpec_t aFileSpec          = {};
+    CAudioFileIf::FileSpec_t aOutputFileSpec    = {};
     
     showClInfo ();
     
     // Parse command line arguments
     
     // Check argc
-    if( argc == 4 ) {
+    if( argc == 5 ) {
         printf("Reading audio file %s\n", argv[1]);
         printf("\nFIR Coefficient %f",atof(argv[2]));
         printf("\nIIR Coefficient %f",atof(argv[3]));
@@ -69,10 +71,14 @@ int main(int argc, char* argv[])
     CAudioFileIf::create(phAudioFile);
     phAudioFile->openFile(sInputFilePath, CAudioFileIf::kFileRead, 0);
     
+    // Open the output wav file for writing
+    CAudioFileIf::create(phAudioFileOutput);
+    
     // Allocate memory
     phAudioFile->getLength(iInFileLength);
     phAudioFile->getFileSpec(aFileSpec);
     iNumChannels = aFileSpec.iNumChannels;
+    iSampleRate = aFileSpec.fSampleRateInHz;
     ppfAudioData = new float *[iNumChannels];
     for(int i = 0; i < iNumChannels; i++){
         ppfAudioData[i] = new float[iInFileLength];
@@ -81,19 +87,30 @@ int main(int argc, char* argv[])
     // Get audio data
     phAudioFile->readData(ppfAudioData, iInFileLength);
     
+    // Done reading safe to close
+//    phAudioFile->closeFile();
+    
     // Instantiate a ProcessAudio object
     pAudioProcessor = new ProcessAudio(iSampleRate, iBlockSize, iBlockSize/2);
+    pAudioProcessor->SetFilterProperties(fFIRCoeff, fIIRCoeff, iDelayInMSec);
     pAudioProcessor->blockAndProcessAudio(ppfAudioData, iInFileLength, iNumChannels);
     
     // Do processing
-    cout << "All Done! COMB FILTERED" << endl << endl;
+    cout << "\nAll Done! COMB FILTERED" << endl << endl;
     
     // Write processed audio to a wav file
-    phAudioFile->writeData (ppfAudioData, iInFileLength);
+//    aOutputFileSpec.fSampleRateInHz = aFileSpec.fSampleRateInHz;
+//    aOutputFileSpec.eFormat = CAudioFileIf::FileFormat_t::kFileFormatWav;
+//    aOutputFileSpec.eBitStreamType = CAudioFileIf::BitStream_t::kFileBitStreamInt16;
+    phAudioFileOutput->openFile("/Users/avrosh/Documents/Coursework/Audio Software Engg/CombFilter/build/data/glasswerk_output.wav", CAudioFileIf::kFileWrite,&aFileSpec);
+    
+    Error_t writeStatus = phAudioFileOutput->writeData(ppfAudioData, iInFileLength);
+    
+//    phAudioFileOutput->closeFile();
     
     // Clean-up and free memory
     CAudioFileIf::destroy(phAudioFile);
-    free(ppfAudioData);
+//    free(ppfAudioData);
     
     return 0;
 }

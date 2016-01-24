@@ -27,7 +27,7 @@ private:
     int blockSize;
     int hopSize;
     int sampleRate;
-    int numBlocks;
+    int iNumBlocks;
     float** block;
 //    float** output;  //doing inplace processesing so not required
     

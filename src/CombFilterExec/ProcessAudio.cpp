@@ -8,7 +8,8 @@
 
 
 #include <math.h>
-#include <algorithm>    // std::copy
+//#include <algorithm>    // std::copy
+#include <iostream>
 
 #include "ProcessAudio.h"
 
@@ -42,7 +43,7 @@ void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNum
 //        }
         
         //Number of blocks
-        int iNumBlocks = ceil(inputLength/hopSize);
+        iNumBlocks = ceil(inputLength/hopSize);
         
         //Allocate single block for processing
         block = new float *[iNumChannels];
@@ -54,20 +55,29 @@ void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNum
         for (int i=0; i<iNumBlocks; i++) {
             
             for (int n=0; n<iNumChannels; n++) {
-                std::copy(input[n][i*hopSize],input[n][i*hopSize]+blockSize,block[n][0]);
+                if (i*hopSize+blockSize > inputLength) {
+                    memcpy(block[n], &input[n][i*hopSize], (inputLength-i*hopSize)  * sizeof(float));
+                }
+                else {
+                    memcpy(block[n], &input[n][i*hopSize], blockSize * sizeof(float));
+                }
             }
             
             //Call comb filter
             block = pFilter->combFilterBlock(block, blockSize, iNumChannels);
+            int iDelayLength = pFilter->getDelayInSamples();
             
             //unblock
-            
             for (int n=0; n<iNumChannels; n++) {
-                
-                //temp - delay length //
-                int delaylength = 100;
-                
-                std::copy(block[n][0],block[n][blockSize],input[n][i*hopSize+delaylength]);
+                if (i==0) {
+                    memcpy(block[n], &input[n][0], (hopSize+iDelayLength) * sizeof(float));
+                }
+                else if (i*hopSize+iDelayLength+hopSize+iDelayLength > inputLength) {
+                    memcpy(block[n], &input[n][i*hopSize+iDelayLength], (inputLength-(i*hopSize+iDelayLength)) * sizeof(float)); //buggy - check again
+                }
+                else {
+                    memcpy(&input[n][i*hopSize+iDelayLength], block[n], (hopSize+iDelayLength) * sizeof(float));
+                }
             }
         }
             
