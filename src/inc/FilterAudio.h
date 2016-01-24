@@ -11,4 +11,19 @@
 
 #include <stdio.h>
 
+
+class FilterAudio {
+public:
+    FilterAudio(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples); // Constructor
+    ~FilterAudio(); // Destructor
+    
+    float **combFilterBlock(float **input, int blockSize, int numChannels);
+
+private:
+    float fFIRCoeff;
+    float fIIRCoeff;
+    int iDelayInSamples;
+    
+};
+
 #endif /* FilterAudio_h */
