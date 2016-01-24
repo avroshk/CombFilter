@@ -13,19 +13,21 @@
 
 class ProcessAudio {
 public:
-    ProcessAudio(int blockSize, int sampleRate); //constructor
+    ProcessAudio(int sampleRate, int blockSize, int hopSize); //constructor
     ~ProcessAudio(); //destructor
     
-    void blockAndProcessAudio(float *input, int length, int numChannels);
+    float** blockAndProcessAudio(float **input, int length, int numChannels);
     void processBlock(float* window, int windowBufferSize, int nChannels);
+    void unblockAudio();
     
     
 private:
     int blockSize;
+    int hopSize;
     int sampleRate;
     int numBlocks;
-    float* block;
-    
+    float** block;
+    float** output;
 };
 
 

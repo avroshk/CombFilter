@@ -6,36 +6,51 @@
 //
 //
 
-#include "ProcessAudio.hpp"
+#include "ProcessAudio.h"
+#include <math.h>
+#include <algorithm>    // std::copy
+
 
 //constructor
-ProcessAudio::ProcessAudio(int blockSize, int sampleRate) {
+ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
     //set block size, sample rate and stuff
     this->blockSize = blockSize;
+    this->hopSize = hopSize;
     this->sampleRate = sampleRate;
+    
+    
 }
 
 ProcessAudio::~ProcessAudio() {
     //delete all the pointers to buffers
 }
 
-void ProcessAudio::blockAndProcessAudio(float *input, int inputLength, int numChannels) {
+float** ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNumChannels) {
   
-//    int numBlocks = inputLength/blockSize;
+    int iNumBlocks = ceil(inputLength/hopSize);
     
-// 
-//    if (numHops > OVERLAPMULTIPLE-1) {
-//        processBlock(block,BUFFERSIZE*OVERLAPMULTIPLE,nChannels);
-//        //Shift block data to left
-//        copy(block+BUFFERSIZE, block+BUFFERSIZE*OVERLAPMULTIPLE, &block[0]);
-//        //Push the last hop into the block
-//        copy(input, input + BUFFERSIZE, &block[BUFFERSIZE*(OVERLAPMULTIPLE-1)]);
-//    }
-//    else {
-//        copy(input, input + BUFFERSIZE, &block[NUMHOPS*BUFFERSIZE]);
-//        numHops++;
-//    }
-//    
+    //Initialize block memory
+    block = new float *[iNumChannels];
+    
+    for (int k=0; k<iNumChannels; k++) {
+        block[k] = new float[inputLength];
+    }
+    
+    //process for every block
+    for (int i=0; i<iNumBlocks; i++) {
+
+        for (int m=0; m<iNumChannels; m++) {
+            std::copy(input[m+i*blockSize],input[m+i*blockSize]+blockSize,&block[m]);
+        }
+        
+        //Call comb filter
+        
+        //unblock
+        
+    }
+    
+    return output;
+    
 }
 
 void ProcessAudio::processBlock(float* window, int windowBufferSize, int nChannels){
@@ -50,4 +65,8 @@ void ProcessAudio::processBlock(float* window, int windowBufferSize, int nChanne
 //    
     // apply comb filter to the block
     
+}
+
+void ProcessAudio::unblockAudio() {
+
 }
