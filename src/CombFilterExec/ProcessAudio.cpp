@@ -6,7 +6,7 @@
 //
 //
 
-#include "ProcessAudio.hpp"
+#include "ProcessAudio.h"
 
 //constructor
 ProcessAudio::ProcessAudio(int blockSize, int sampleRate) {
