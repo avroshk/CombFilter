@@ -10,15 +10,17 @@
 #define ProcessAudio_hpp
 
 #include <stdio.h>
+#include "FilterAudio.h"
 
 class ProcessAudio {
 public:
     ProcessAudio(int sampleRate, int blockSize, int hopSize); //constructor
     ~ProcessAudio(); //destructor
     
-    float** blockAndProcessAudio(float **input, int length, int numChannels);
-    void processBlock(float* window, int windowBufferSize, int nChannels);
-    void unblockAudio();
+    void blockAndProcessAudio(float **input, int length, int numChannels);
+    void SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples);
+    
+   
     
     
 private:
@@ -27,7 +29,9 @@ private:
     int sampleRate;
     int numBlocks;
     float** block;
-    float** output;
+//    float** output;  //doing inplace processesing so not required
+    
+    FilterAudio *pFilter;
 };
 
 

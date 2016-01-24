@@ -6,9 +6,11 @@
 //
 //
 
-#include "ProcessAudio.h"
+
 #include <math.h>
 #include <algorithm>    // std::copy
+
+#include "ProcessAudio.h"
 
 //constructor
 ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
@@ -16,56 +18,59 @@ ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
     this->blockSize = blockSize;
     this->hopSize = hopSize;
     this->sampleRate = sampleRate;
-    
-    
 }
+
 
 ProcessAudio::~ProcessAudio() {
     //delete all the pointers to buffers
 }
+    
+void ProcessAudio::SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples) {
+    pFilter = new FilterAudio(fFIRCoeff,fIIRCoeff,iDelayInSamples);
+}
 
-float** ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNumChannels) {
-  
-    int iNumBlocks = ceil(inputLength/hopSize);
+void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNumChannels) {
     
-    //Initialize block memory
-    block = new float *[iNumChannels];
-    
-    for (int k=0; k<iNumChannels; k++) {
-        block[k] = new float[inputLength];
-    }
-    
-    //process for every block
-    for (int i=0; i<iNumBlocks; i++) {
-
-        for (int m=0; m<iNumChannels; m++) {
-            std::copy(input[m+i*blockSize],input[m+i*blockSize]+blockSize,block[m]);
+    // Check if Filter properties have been set before proceeding
+    if (pFilter) {
+        
+        //Allocate memory block for the output (same as length of input)
+        ////Future task - we can try inplace substitution instead
+//        output = new float*[iNumChannels];
+//        for (int i=0; i<iNumChannels; i++) {
+//            output[i] = new float[inputLength];
+//        }
+        
+        //Number of blocks
+        int iNumBlocks = ceil(inputLength/hopSize);
+        
+        //Allocate single block for processing
+        block = new float *[iNumChannels];
+        for (int k=0; k<iNumChannels; k++) {
+            block[k] = new float[inputLength];
         }
         
-        //Call comb filter
-        
-        //unblock
-        
+        //Iterate through every block
+        for (int i=0; i<iNumBlocks; i++) {
+            
+            for (int n=0; n<iNumChannels; n++) {
+                std::copy(input[n][i*hopSize],input[n][i*hopSize]+blockSize,block[n][0]);
+            }
+            
+            //Call comb filter
+            block = pFilter->combFilterBlock(block, blockSize, iNumChannels);
+            
+            //unblock
+            
+            for (int n=0; n<iNumChannels; n++) {
+                
+                //temp - delay length //
+                int delaylength = 100;
+                
+                std::copy(block[n][0],block[n][blockSize],input[n][i*hopSize+delaylength]);
+            }
+        }
+            
     }
-    
-    return output;
-    
 }
 
-void ProcessAudio::processBlock(float* window, int windowBufferSize, int nChannels){
-//    
-//    for (int i=0; i<windowBufferSize; i++) {
-//        leftInput[i] = window[i];
-//    }
-//    
-//    soundMutex.lock();
-//    middleInput = leftInput;
-//    soundMutex.unlock();
-//    
-    // apply comb filter to the block
-    
-}
-
-void ProcessAudio::unblockAudio() {
-
-}

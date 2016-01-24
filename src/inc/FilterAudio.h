@@ -24,6 +24,7 @@ private:
     float fIIRCoeff;
     int iDelayInSamples;
     
+    
 };
 
 #endif /* FilterAudio_h */
