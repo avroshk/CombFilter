@@ -3,6 +3,8 @@
 #include <ctime>
 
 #include "AudioFileIf.h"
+#include "ProcessAudio.h"
+#include "FilterAudio.h"
 
 using std::cout;
 using std::endl;
@@ -22,6 +24,8 @@ int main(int argc, char* argv[])
     int                     iSampleRate         = 0;
     int                     iBlockSize          = 1024;
     int                     iHopSize            = 512;
+    
+    ProcessAudio            *pAudioProcessor;
     
     long long               iInFileLength       = 0;        //!< length of input file
     clock_t                 time                = 0;
@@ -77,8 +81,12 @@ int main(int argc, char* argv[])
     // Get audio data
     phAudioFile->readData(ppfAudioData, iInFileLength);
     
+    // Instantiate a ProcessAudio object
+    pAudioProcessor = new ProcessAudio(iSampleRate, iBlockSize, iBlockSize/2);
+    pAudioProcessor->blockAndProcessAudio(ppfAudioData, iInFileLength, iNumChannels);
+    
     // Do processing
-    cout << "All Done!" << endl << endl;
+    cout << "All Done! COMB FILTERED" << endl << endl;
     
     // Write processed audio to a wav file
     phAudioFile->writeData (ppfAudioData, iInFileLength);
