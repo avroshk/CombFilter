@@ -21,44 +21,41 @@ FilterAudio::~FilterAudio() {
     // Free all memory
 }
 
-float ** FilterAudio::combFilterBlock(float **input, int blockSize, int numChannels){
+float ** FilterAudio::combFilterBlock(float **fInput, int iBlockSize, int iNumChannels){
     
     // Allocate memory for output
-    float **output = new float *[numChannels];
+    float **fOutput = new float *[iNumChannels];
     
-    for (int i = 0; i < numChannels ; i ++)
+    for (int i = 0; i < iNumChannels ; i ++)
     {
-        output[i] = new float[blockSize];
+        fOutput[i] = new float[iBlockSize];
     }
     
-//    float* test1 = input[0];
-
-    
-    float *fFIRDelay = new float [iDelayInSamples];
-    float *fIIRDelay = new float [iDelayInSamples];
-    
     // Filter each channel
-    for(int i = 0; i<numChannels; i++){
+    for(int i = 0; i<iNumChannels; i++){
+        float *fFIRDelay = new float [iDelayInSamples];
+        float *fIIRDelay = new float [iDelayInSamples];
+        
         // Initialize delay lines
         for(int k = 0; k < iDelayInSamples; k++){
-            fFIRDelay[k] = 0.0;
-            fIIRDelay[k] = 0.0;
+            fFIRDelay[k] = 0;
+            fIIRDelay[k] = 0;
         }
         
         // Perform filtering
-        for(int j = 0; j < blockSize; j++){
-            output[i][j] = input[i][j] + fFIRCoeff*fFIRDelay[iDelayInSamples-1] + fIIRCoeff*fIIRDelay[iDelayInSamples-1];
+        for(int j = 0; j < iBlockSize; j++){
+            fOutput[i][j] = fInput[i][j] + fFIRCoeff*fFIRDelay[iDelayInSamples-1] + fIIRCoeff*fIIRDelay[iDelayInSamples-1];
             
             for(int k = iDelayInSamples-1; k>0; k--){
-                fFIRDelay[k] = fFIRDelay[k-1];
                 fIIRDelay[k] = fIIRDelay[k-1];
+                fFIRDelay[k] = fFIRDelay[k-1];
             }
-            fFIRDelay[0] = input[i][j];
-            fIIRDelay[0] = output[i][j];
+            fFIRDelay[0] = fInput[i][j];
+            fIIRDelay[0] = fOutput[i][j];
         }
     }
     
-    return output;
+    return fOutput;
 }
 
 int FilterAudio::getDelayInSamples() {
