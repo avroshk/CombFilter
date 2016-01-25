@@ -37,7 +37,7 @@ void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNum
         
         //Allocate memory block for the output (same as length of input)
         ////Future task - we can try inplace substitution instead
-//        output = new float*[iNumChannels];
+//        float **output = new float*[iNumChannels];
 //        for (int i=0; i<iNumChannels; i++) {
 //            output[i] = new float[inputLength];
 //        }
@@ -52,9 +52,10 @@ void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNum
         }
         
         //Iterate through every block
-        for (int i=0; i<iNumBlocks; i++) {
+        for (int i=0; i<iNumBlocks-3; i++) {
             
             for (int n=0; n<iNumChannels; n++) {
+                // Last block edge case
                 if (i*hopSize+blockSize > inputLength) {
                     memcpy(block[n], &input[n][i*hopSize], (inputLength-i*hopSize)  * sizeof(float));
                 }
@@ -63,23 +64,25 @@ void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNum
                 }
             }
             
-            //Call comb filter
+            // Call comb filter
             block = pFilter->combFilterBlock(block, blockSize, iNumChannels);
             int iDelayLength = pFilter->getDelayInSamples();
+            int iFiniteOffset = 1;
             
-            //unblock
+            // Check whether to offset by delayInSamples
+            if( pFilter->getFIRCoeff() > 0){
+                iFiniteOffset = 0;
+            }
+            
+            // Unblock
             for (int n=0; n<iNumChannels; n++) {
-                //Last block edge case
-                if (i==0) {
-                    memcpy(&input[n][i*hopSize], block[n], (hopSize+iDelayLength) * sizeof(float));
+                // Last block edge case
+                if (i*hopSize+blockSize > inputLength) {
+                    memcpy(&input[n][i*hopSize], &block[n][0], (inputLength-(i*hopSize)) * sizeof(float));
+                } else {
+                    memcpy(&input[n][i*hopSize+iFiniteOffset*iDelayLength], &block[n][iDelayLength], (hopSize) * sizeof(float));
                 }
-//                else if (i*hopSize+blockSize > inputLength) {
-//                    memcpy(&input[n][i*hopSize+iDelayLength], block[n], (inputLength-(i*hopSize+iDelayLength)) * sizeof(float));
-//                }
-                else {
-                    memcpy(&input[n][i*hopSize+iDelayLength], &block[n][iDelayLength], (hopSize) * sizeof(float));
-                }
-                
+            
             }
         }
             

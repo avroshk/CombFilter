@@ -47,8 +47,8 @@ float ** FilterAudio::combFilterBlock(float **fInput, int iBlockSize, int iNumCh
             fOutput[i][j] = fInput[i][j] + fFIRCoeff*fFIRDelay[iDelayInSamples-1] + fIIRCoeff*fIIRDelay[iDelayInSamples-1];
             
             for(int k = iDelayInSamples-1; k>0; k--){
-                fIIRDelay[k] = fIIRDelay[k-1];
                 fFIRDelay[k] = fFIRDelay[k-1];
+                fIIRDelay[k] = fIIRDelay[k-1];
             }
             fFIRDelay[0] = fInput[i][j];
             fIIRDelay[0] = fOutput[i][j];
@@ -60,4 +60,12 @@ float ** FilterAudio::combFilterBlock(float **fInput, int iBlockSize, int iNumCh
 
 int FilterAudio::getDelayInSamples() {
     return iDelayInSamples;
+}
+
+float FilterAudio::getFIRCoeff() {
+    return fFIRCoeff;
+}
+
+float FilterAudio::getIIRCoeff() {
+    return fIIRCoeff;
 }

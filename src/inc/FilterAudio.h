@@ -19,6 +19,8 @@ public:
     
     float **combFilterBlock(float **input, int blockSize, int numChannels);
     int getDelayInSamples();
+    float getFIRCoeff();
+    float getIIRCoeff();
 
 private:
     float fFIRCoeff;

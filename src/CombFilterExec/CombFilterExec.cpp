@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
     float                   fIIRCoeff           = 0.0;
     int                     iDelayInMSec        = 0;
     int                     iSampleRate         = 0;
-    int                     iBlockSize          = 1024;
+    int                     iBlockSize          = 2048;
 //    int                     iHopSize            = 512;
     int                     iOverlapRatio       = 2;
     
