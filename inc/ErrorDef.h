@@ -17,6 +17,8 @@ enum Error_t
     kMemError,
 
     kUnknownError,
+    
+    kDelayTooLongError,
 
     kNumErrors
 };

@@ -24,8 +24,10 @@ ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
 
 ProcessAudio::~ProcessAudio() {
     //delete all the pointers to buffers
+    delete pFilter;
+    pFilter = 0;
 }
-    
+
 void ProcessAudio::SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples) {
     pFilter = new FilterAudio(fFIRCoeff,fIIRCoeff,iDelayInSamples);
 }
@@ -85,6 +87,12 @@ void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNum
             
             }
         }
+        
+        //free memory allocated for block
+        for (int k=0; k<iNumChannels; k++) {
+            delete [] block[k];
+        }
+        delete [] block;
             
     }
 }

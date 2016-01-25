@@ -20,16 +20,12 @@ public:
     void blockAndProcessAudio(float **input, int length, int numChannels);
     void SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples);
     
-   
-    
-    
 private:
     int blockSize;
     int hopSize;
     int sampleRate;
     int iNumBlocks;
     float** block;
-//    float** output;  //doing inplace processesing so not required
     
     FilterAudio *pFilter;
 };

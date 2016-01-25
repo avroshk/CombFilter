@@ -1,57 +1,47 @@
 #include <iostream>
-#include <fstream>
-#include <ctime>
 
-#include "AudioFileIf.h"
-#include "ProcessAudio.h"
-#include "FilterAudio.h"
+#include "CombFilterProject.h"
 
-using std::cout;
-using std::endl;
-
-// local function declarations
-void    showClInfo ();
+using namespace std;
 
 // main function
 int main(int argc, char* argv[])
 {
-    std::string             sInputFilePath,                 //!< file paths
-                            sOutputFilePath,
-                            sInputFileName,
-                            sOutputFileName;
+    //decalare local variables
     
-    float                   fFIRCoeff           = 0.0;
-    float                   fIIRCoeff           = 0.0;
-    int                     iDelayInMSec        = 0;
-    int                     iSampleRate         = 0;
-    int                     iBlockSize          = 2048;
-//    int                     iHopSize            = 512;
-    int                     iOverlapRatio       = 2;
+    CombFilterProject *pCombFilterProject;
     
-    ProcessAudio            *pAudioProcessor;
+    string sInputFilePath, sOutputFilePath, sInputFileName, sOutputFileName;
+
+    float fFIRCoeff = 0.0;
+    float fIIRCoeff = 0.0;
+    int iDelayInMSec = 0;
+    int iBlockSize = 2048;
+    int iOverlapRatio = 2;
     
-    long long               iInFileLength       = 0;        //!< length of input file
-    float                   **ppfAudioData      = 0;
-    CAudioFileIf            *phAudioFile        = 0;
-    CAudioFileIf            *phAudioFileOutput  = 0;
-    int                     iNumChannels        = 1;
-    CAudioFileIf::FileSpec_t aFileSpec          = {};
-    CAudioFileIf::FileSpec_t aOutputFileSpec    = {};
+    //Create Comb Filter
+    CombFilterProject::create(pCombFilterProject, iBlockSize, iOverlapRatio);
+
+    cout<<"CombFilter V"<<pCombFilterProject->getVersion(CombFilterProject::kMajor)
+    <<"."<<pCombFilterProject->getVersion(CombFilterProject::kMinor)
+    <<"."<<pCombFilterProject->getVersion(CombFilterProject::kPatch)<<endl;
     
-    showClInfo ();
+    cout<<"Build date: "<<pCombFilterProject->getBuildDate()<<endl<<endl;
+    
     
     // Parse command line arguments
     
     // Check argc
     if( argc == 6 ) {
-        printf("Reading audio file %s%s\n", argv[1],argv[2]);
+        printf("Reading audio file: %s%s\n", argv[1],argv[2]);
         printf("\nFIR Coefficient %f",atof(argv[3]));
         printf("\nIIR Coefficient %f",atof(argv[4]));
         printf("\nDelay in milliseconds %i",atoi(argv[5]));
+        printf("\n");
         
         // Make sure gain is between -1 and 1, a number
         
-        // Check that delay time is positive and nonzero. Set upper and lower limit 0 - 100ms
+        // Check that delay time is positive and nonzero.
         
     }
     else if( argc > 6 ) {
@@ -72,61 +62,20 @@ int main(int argc, char* argv[])
     sOutputFilePath = sInputFilePath;
     sOutputFileName = "output.wav";
     
-    // Open the input wave file
-    CAudioFileIf::create(phAudioFile);
-    phAudioFile->openFile(sInputFilePath+sInputFileName, CAudioFileIf::kFileRead, 0);
+    pCombFilterProject->init(sInputFilePath, sInputFileName, sOutputFilePath, sOutputFileName, fFIRCoeff, fIIRCoeff, iDelayInMSec);
+    pCombFilterProject->readAudio();
+    pCombFilterProject->processAudio();
+    pCombFilterProject->writeAudio();
     
-    // Open the output wav file for writing
-    CAudioFileIf::create(phAudioFileOutput);
+    //Write Audio to CSV file for comparison with matlab
+    pCombFilterProject->writeAudioToText("output.csv");
     
-    // Allocate memory
-    phAudioFile->getLength(iInFileLength);
-    phAudioFile->getFileSpec(aFileSpec);
-    iNumChannels = aFileSpec.iNumChannels;
-    iSampleRate = aFileSpec.fSampleRateInHz;
-    ppfAudioData = new float *[iNumChannels];
-    for(int i = 0; i < iNumChannels; i++){
-        ppfAudioData[i] = new float[iInFileLength];
-    }
+    cout<<"\nDelay in samples: "<<pCombFilterProject->getDelayinSamples()<<endl;
+    cout<<"\nBuild date: "<<pCombFilterProject->getBuildDate()<<endl;
     
-    // Get audio data
-    phAudioFile->readData(ppfAudioData, iInFileLength);
-    
-    // Done reading safe to close
-    phAudioFile->closeFile();
-    
-    // Instantiate a ProcessAudio object
-    pAudioProcessor = new ProcessAudio(iSampleRate, iBlockSize, iBlockSize/iOverlapRatio);
-    pAudioProcessor->SetFilterProperties(fFIRCoeff, fIIRCoeff, iDelayInMSec);
-    pAudioProcessor->blockAndProcessAudio(ppfAudioData, iInFileLength, iNumChannels);
-    
-    // Do processing
-    cout << "\nAll Done! COMB FILTERED" << endl << endl;
-    
-    // Write processed audio to a wav file
-    aOutputFileSpec.fSampleRateInHz = aFileSpec.fSampleRateInHz;
-    aOutputFileSpec.eFormat = CAudioFileIf::FileFormat_t::kFileFormatWav;
-    aOutputFileSpec.eBitStreamType = CAudioFileIf::BitStream_t::kFileBitStreamInt16;
-    aOutputFileSpec.iNumChannels = aFileSpec.iNumChannels;
-    phAudioFileOutput->openFile(sOutputFilePath+sOutputFileName, CAudioFileIf::kFileWrite,&aOutputFileSpec);
-    
-    Error_t writeStatus = phAudioFileOutput->writeData(ppfAudioData, iInFileLength);
-    
-    cout<<"\nFile write status : "<<writeStatus<<endl;
-
-    phAudioFileOutput->closeFile();
-    
-    // Clean-up and free memory
-    CAudioFileIf::destroy(phAudioFile);
-    CAudioFileIf::destroy(phAudioFileOutput);
-//    free(ppfAudioData);
-    
+    pCombFilterProject->destroy(pCombFilterProject);
+  
     return 0;
 }
 
-void showClInfo()
-{
-    cout<<"Comb Filter ver1.0\n";
-    return;
-}
 
