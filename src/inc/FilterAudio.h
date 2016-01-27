@@ -14,19 +14,23 @@
 
 class FilterAudio {
 public:
-    FilterAudio(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples); // Constructor
+    FilterAudio(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, int iNumChannels); // Constructor
     ~FilterAudio(); // Destructor
     
     float **combFilterBlock(float **input, int blockSize, int numChannels);
     int getDelayInSamples();
     float getFIRCoeff();
     float getIIRCoeff();
+    
+    void clearDelayLines();
 
 private:
     float fFIRCoeff;
     float fIIRCoeff;
     int iDelayInSamples;
-    
+    int iNumChannels;
+    float **fFIRDelay;
+    float **fIIRDelay;
 };
 
 #endif /* FilterAudio_h */
