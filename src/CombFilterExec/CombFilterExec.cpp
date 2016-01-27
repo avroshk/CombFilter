@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <math.h>
 #include "CombFilterProject.h"
 #include "FilterAudio.h"
 
@@ -151,5 +151,19 @@ int testZeroInput() {
     return 0;
 }
 
+float *sinOsc(float fFreq, float fAmp, float fLengthInSec, unsigned uFs){
+    
+    float pi = 3.14159265;
 
+    int lengthInSamples = ceil(fLengthInSec * uFs);
+    float* fSineWave = new float[lengthInSamples];
+
+    // Fill sine wave
+    for(int i = 0; i<lengthInSamples; i++){
+        fSineWave[i] = fAmp* sin((2.f*pi*fFreq)/(uFs) *i);
+    }
+    
+    return fSineWave;
+    
+}
 

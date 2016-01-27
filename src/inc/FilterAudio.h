@@ -18,11 +18,12 @@ public:
     ~FilterAudio(); // Destructor
     
     float **combFilterBlock(float **input, int blockSize, int numChannels);
-    int getDelayInSamples();
-    float getFIRCoeff();
-    float getIIRCoeff();
-    
+
     void clearDelayLines();
+    
+    int getDelayInSamples() const;
+    float getFIRCoeff() const;
+    float getIIRCoeff() const;
 
 private:
     float fFIRCoeff;
