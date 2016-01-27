@@ -1,10 +1,13 @@
 #include <iostream>
 
 #include "CombFilterProject.h"
+#include "FilterAudio.h"
 
 //# define TEST_MODE
 
 using namespace std;
+
+int testZeroInput();
 
 // main function
 int main(int argc, char* argv[])
@@ -104,7 +107,49 @@ int main(int argc, char* argv[])
     pCombFilterProject->destroy(pCombFilterProject);
     
     cout<<"Success!\n";
+    
+    testZeroInput();
   
     return 0;
 }
+
+int testZeroInput() {
+    FilterAudio *pFilter;
+    float fFIRCoeff = 1.0;
+    float fIIRCoeff = 0.0;
+    int iDelayInSamples = 10;
+    int iNumChannels = 1;
+    int iBlockSize = 1024;
+    int iNumBlocks = 50; //Test for 10 blocks
+    float **ppfAudioData = new float *[iNumChannels];;
+    
+    for (int n=0; n<iNumChannels; n++) {
+        ppfAudioData[n] = new float[iBlockSize];
+        for (int m=0; m<iBlockSize; m++) {
+            ppfAudioData[n][m] = 0;
+        }
+    }
+    
+    pFilter = new FilterAudio(fFIRCoeff, fIIRCoeff, iDelayInSamples, iNumChannels);
+    
+    while (iNumBlocks > 0) {
+        pFilter->combFilterBlock(ppfAudioData, iBlockSize, iNumChannels);
+        
+        for (int n=0; n<iNumChannels; n++) {
+            for (int m=0; m<iBlockSize; m++) {
+                if (ppfAudioData[n][m] != 0) {
+                    
+                    cout<<"\nZero Input Test: failed!\n";
+                    return -1;
+                }
+            }
+        }
+        iNumBlocks--;
+    }
+
+    cout<<"\nZero Input Test: Success!\n";
+    return 0;
+}
+
+
 
