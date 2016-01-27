@@ -9,7 +9,7 @@
 #include "FilterAudio.h"
 #include <iostream>
 
-// Constructor
+/* The constructor method for FilterAudio */
 FilterAudio::FilterAudio(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, int iNumChannels) {
     // Initialize coefficients
     this->fFIRCoeff = fFIRCoeff;
@@ -28,6 +28,7 @@ FilterAudio::FilterAudio(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, 
     clearDelayLines();
 }
 
+/* The destructor methods for filterAudio */
 FilterAudio::~FilterAudio() {
     
     // Free all memory
@@ -40,16 +41,7 @@ FilterAudio::~FilterAudio() {
 
 }
 
-void FilterAudio::clearDelayLines(){
-    // Initialize delay lines
-    for(int n = 0; n < iNumChannels; n++){
-        for(int k = 0; k < iDelayInSamples; k++){
-            fFIRDelay[n][k] = 0;
-            fIIRDelay[n][k] = 0;
-        }
-    }
-}
-
+/* A method to perform FIR and IIR comb filtering of an input block using the coefficients defined when constructing the filterAudio object. */
 float ** FilterAudio::combFilterBlock(float **fInput, int iBlockSize, int iNumChannels){
     
     // Allocate memory for output
@@ -80,14 +72,29 @@ float ** FilterAudio::combFilterBlock(float **fInput, int iBlockSize, int iNumCh
     return fOutput;
 }
 
-int FilterAudio::getDelayInSamples() {
+
+/* A public method to clear the multichannel delay lines. Sets all values to 0.0 */
+void FilterAudio::clearDelayLines(){
+    // Initialize delay lines
+    for(int n = 0; n < iNumChannels; n++){
+        for(int k = 0; k < iDelayInSamples; k++){
+            fFIRDelay[n][k] = 0.0;
+            fIIRDelay[n][k] = 0.0;
+        }
+    }
+}
+
+/* A public method that returns the number of samples in the delay line. */
+int FilterAudio::getDelayInSamples() const{
     return iDelayInSamples;
 }
 
-float FilterAudio::getFIRCoeff() {
+/* A public method that returns the FIR gain Coefficient */
+float FilterAudio::getFIRCoeff() const{
     return fFIRCoeff;
 }
 
-float FilterAudio::getIIRCoeff() {
+/* A public method that returns the IIR gain Coefficient */
+float FilterAudio::getIIRCoeff() const{
     return fIIRCoeff;
 }

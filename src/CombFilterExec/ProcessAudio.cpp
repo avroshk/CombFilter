@@ -12,7 +12,7 @@
 
 #include "ProcessAudio.h"
 
-//constructor
+/* The constructor method for ProcessAudio */
 ProcessAudio::ProcessAudio(int sampleRate, int blockSize) {
     //set block size, sample rate and stuff
     this->iBlockSize = blockSize;
@@ -20,6 +20,7 @@ ProcessAudio::ProcessAudio(int sampleRate, int blockSize) {
 
 }
 
+/* An overloaded constructor method for ProcessAudio that includes hopSize */
 ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
     //set block size, sample rate and stuff
     this->iBlockSize = blockSize;
@@ -27,7 +28,7 @@ ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
     this->iSampleRate = sampleRate;
 }
 
-
+/* The destructor method for ProcessAudio */
 ProcessAudio::~ProcessAudio() {
     //delete all the allocated pointers
     
@@ -35,10 +36,12 @@ ProcessAudio::~ProcessAudio() {
     pFilter = 0;
 }
 
+/* The public method to setup filtering and delay buffer information */
 void ProcessAudio::SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, int iNumChannels) {
     pFilter = new FilterAudio(fFIRCoeff,fIIRCoeff,iDelayInSamples, iNumChannels);
 }
 
+/* The public method to perform the read blocks of audio, process and optionally write an output file */
 void ProcessAudio::blockAndProcessAudio(CAudioFileIf *phAudioInputFile, CAudioFileIf *phAudioOutputFile, std::ofstream *txtFile) {
     
     // Check if Filter properties have been set before proceeding
@@ -78,6 +81,7 @@ void ProcessAudio::blockAndProcessAudio(CAudioFileIf *phAudioInputFile, CAudioFi
     }
 }
 
+/* The private method to allocate a multichannel buffer of audio */
 void ProcessAudio::allocateBlockMemory(int iNumChannels) {
     ppfBlock = new float *[iNumChannels];
     for (int k=0; k<iNumChannels; k++) {
@@ -85,6 +89,7 @@ void ProcessAudio::allocateBlockMemory(int iNumChannels) {
     }
 }
 
+/* The private method to destroy the memory for the multichannel buffer of audio */
 void ProcessAudio::freeBlockMemory(int iNumChannels) {
     for (int k=0; k<iNumChannels; k++) {
         delete [] ppfBlock[k];
