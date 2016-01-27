@@ -16,6 +16,7 @@ FilterAudio::FilterAudio(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, 
     this->fIIRCoeff = fIIRCoeff;
     this->iDelayInSamples = iDelayInSamples;
     this->iNumChannels = iNumChannels;
+    
     fFIRDelay = new float *[iNumChannels];
     fIIRDelay = new float *[iNumChannels];
     
@@ -28,11 +29,14 @@ FilterAudio::FilterAudio(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, 
 }
 
 FilterAudio::~FilterAudio() {
+    
     // Free all memory
     for (int k=0; k<iNumChannels; k++) {
         delete [] fFIRDelay[k];
         delete [] fIIRDelay[k];
     }
+    delete [] fFIRDelay;
+    delete [] fIIRDelay;
 
 }
 
@@ -44,7 +48,6 @@ void FilterAudio::clearDelayLines(){
             fIIRDelay[n][k] = 0;
         }
     }
-   
 }
 
 float ** FilterAudio::combFilterBlock(float **fInput, int iBlockSize, int iNumChannels){

@@ -23,13 +23,16 @@ public:
     void SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, int iNumChannels);
     
 private:
-    int blockSize;
-    int hopSize;
-    int sampleRate;
+    int iBlockSize;
+    int iHopSize;
+    int iSampleRate;
     float** ppfBlock;
     
     CAudioFileIf::FileSpec_t aFileSpec;
     FilterAudio *pFilter;
+    
+    void allocateBlockMemory(int iNumChannels);
+    void freeBlockMemory(int iNumChannels);
     
 };
 

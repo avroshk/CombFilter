@@ -15,21 +15,22 @@
 //constructor
 ProcessAudio::ProcessAudio(int sampleRate, int blockSize) {
     //set block size, sample rate and stuff
-    this->blockSize = blockSize;
-    this->sampleRate = sampleRate;
+    this->iBlockSize = blockSize;
+    this->iSampleRate = sampleRate;
 
 }
 
 ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
     //set block size, sample rate and stuff
-    this->blockSize = blockSize;
-    this->hopSize = hopSize;
-    this->sampleRate = sampleRate;
+    this->iBlockSize = blockSize;
+    this->iHopSize = hopSize;
+    this->iSampleRate = sampleRate;
 }
 
 
 ProcessAudio::~ProcessAudio() {
-    //delete all the pointers to buffers
+    //delete all the allocated pointers
+    
     delete pFilter;
     pFilter = 0;
 }
@@ -45,25 +46,22 @@ void ProcessAudio::blockAndProcessAudio(CAudioFileIf *phAudioInputFile, CAudioFi
         
         phAudioInputFile->getFileSpec(aFileSpec);
     
-        //Allocate single block for processing
-        ppfBlock = new float *[aFileSpec.iNumChannels];
-        for (int k=0; k<aFileSpec.iNumChannels; k++) {
-            ppfBlock[k] = new float[blockSize];
-        }
+        allocateBlockMemory(aFileSpec.iNumChannels);
         
         while (!phAudioInputFile->isEof()) {
             
-            long long iNumFrames = blockSize;
+            long long iNumFrames = iBlockSize;
             phAudioInputFile->readData(ppfBlock, iNumFrames);
             
-            // Call comb filter
-            ppfBlock = pFilter->combFilterBlock(ppfBlock, blockSize, aFileSpec.iNumChannels);
+            // Apply comb filter to block
+            ppfBlock = pFilter->combFilterBlock(ppfBlock, iBlockSize, aFileSpec.iNumChannels);
             
             //Write to output file
-            phAudioOutputFile->writeData(ppfBlock, blockSize);
+            phAudioOutputFile->writeData(ppfBlock, iBlockSize);
            
+            //Write to text file if a pointer is made available
             if (txtFile) {
-                for (int i=0; i<blockSize; i++) {
+                for (int i=0; i<iBlockSize; i++) {
                     for (int j=0 ; j<aFileSpec.iNumChannels; j++) {
                         if (j!=0) {
                             *txtFile << ",";
@@ -73,16 +71,24 @@ void ProcessAudio::blockAndProcessAudio(CAudioFileIf *phAudioInputFile, CAudioFi
                     *txtFile <<"\n";
                 }
             }
-            
-        
         }
         
-        //free memory allocated for block
-        for (int k=0; k<aFileSpec.iNumChannels; k++) {
-            delete [] ppfBlock[k];
-        }
-        delete [] ppfBlock;
+        freeBlockMemory(aFileSpec.iNumChannels);
             
     }
+}
+
+void ProcessAudio::allocateBlockMemory(int iNumChannels) {
+    ppfBlock = new float *[iNumChannels];
+    for (int k=0; k<iNumChannels; k++) {
+        ppfBlock[k] = new float[iBlockSize];
+    }
+}
+
+void ProcessAudio::freeBlockMemory(int iNumChannels) {
+    for (int k=0; k<iNumChannels; k++) {
+        delete [] ppfBlock[k];
+    }
+    delete [] ppfBlock;
 }
 

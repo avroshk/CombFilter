@@ -2,6 +2,8 @@
 
 #include "CombFilterProject.h"
 
+//# define TEST_MODE
+
 using namespace std;
 
 // main function
@@ -14,59 +16,89 @@ int main(int argc, char* argv[])
 
     float fFIRCoeff = 0.0;
     float fIIRCoeff = 0.0;
-    int iDelayInMSec = 0;
+    float fDelayInMSec = 0.0;
     int iBlockSize = 2048; //default blockSize
+    bool bOutputResultToTextFile = false; //default
+    int iFileOpenStatus;
+
+    
+    // Parse command line arguments
+    if( argc == 7 || argc == 8) {
+        //File path and name
+        sInputFilePath = argv[1];
+        sInputFileName = argv[2];
+        
+        //Gain
+        fFIRCoeff = atof(argv[3]);
+        fIIRCoeff = atof(argv[4]);
+        
+        //Check for boundary conditions
+        if (fFIRCoeff > 1 || fFIRCoeff < -1 || fIIRCoeff > 1 || fFIRCoeff < -1) {
+            cout<<"\nFIR/IIR Co-efficient should be between -1 and 1.\n";
+            return 0;
+        }
+        //Delay time
+        fDelayInMSec = atof(argv[5]);
+        
+        //Check that delay time is positive
+        if (fDelayInMSec < 0 ) {
+            cout<<"\nDelay time must be positive.\n";
+            return 0;
+        }
+        
+        //enable write to Text file
+        if (argv[6] != NULL) {
+            int temp = atoi(argv[6]);
+            if (temp == 1) {
+                bOutputResultToTextFile = true;
+            }
+        }
+        
+        //Optional argument to set blockSize
+        if (argv[7] != NULL) {
+            iBlockSize = atoi(argv[7]);
+        }
+    }
+    else if( argc > 8 ) {
+        printf("Too many arguments supplied.\n");
+        return 0;
+    }
+    else {
+        printf("Please provide the following\n 1.file path\n 2.audio file name\n 3.FIR gain\n 4.IIR gain\n 5.delay time in milliseconds\n 6.write to text file (yes - 1, no - any value)\n 7.[OPTIONAL] block size\n ");
+        return 0;
+    }
     
     
     //Create Comb Filter
     CombFilterProject::create(pCombFilterProject, iBlockSize);
     
-    //Print Build version
+    //Print Information
     cout<<"CombFilter V"<<pCombFilterProject->getVersion(CombFilterProject::kMajor)
     <<"."<<pCombFilterProject->getVersion(CombFilterProject::kMinor)
     <<"."<<pCombFilterProject->getVersion(CombFilterProject::kPatch)<<endl;
     
     cout<<"Build date: "<<pCombFilterProject->getBuildDate()<<endl<<endl;
+    
+    cout<<"Reading audio file: "<<sInputFilePath<<sInputFileName<<"\n";
+    cout<<"\nFIR Coefficient:"<<fFIRCoeff;
+    cout<<"\nIIR Coefficient:"<<fIIRCoeff;
+    cout<<"\nBlock size :"<<iBlockSize;
+    cout<<"\nDelay in milliseconds :"<<fDelayInMSec;
 
-    
-    // Parse command line arguments
-    if( argc == 6 ) {
-        printf("Reading audio file: %s%s\n", argv[1],argv[2]);
-        printf("\nFIR Coefficient %f",atof(argv[3]));
-        printf("\nIIR Coefficient %f",atof(argv[4]));
-        printf("\nDelay in milliseconds %i",atoi(argv[5]));
-        printf("\n");
-        
-        // Make sure gain is between -1 and 1, a number
-        
-        // Check that delay time is positive and nonzero.
-        
-    }
-    else if( argc > 6 ) {
-        printf("Too many arguments supplied.\n");
-        return 0;
-    }
-    else {
-        printf("Please provide the following\n 1.file path\n 2.audio file name\n 3.FIR gain\n 4.IIR gain\n 5.delay time in miliseconds\n and 6.block size (optional)\n");
-        return 0;
-    }
-    
-    // Get audio file name
-    sInputFilePath = argv[1];
-    sInputFileName = argv[2];
-    fFIRCoeff = atof(argv[3]);
-    fIIRCoeff = atof(argv[4]);
-    iDelayInMSec = atoi(argv[5]);
-    if (argv[6] != NULL) {
-        iBlockSize = atoi(argv[3]);
-    }
+    //Set defaults
     sOutputFilePath = sInputFilePath;
     sOutputFileName = "output.wav";
    
-    pCombFilterProject->init(sInputFilePath, sInputFileName, sOutputFilePath, sOutputFileName, fFIRCoeff, fIIRCoeff, iDelayInMSec, true);
+    //Initialize CombFilter
+    iFileOpenStatus = pCombFilterProject->init(sInputFilePath, sInputFileName, sOutputFilePath, sOutputFileName, fFIRCoeff, fIIRCoeff, fDelayInMSec, bOutputResultToTextFile);
     
-    cout<<"Delay in samples: "<<pCombFilterProject->getDelayinSamples()<<endl<<endl;
-
+    if (iFileOpenStatus != 0) {
+        /*File open error*/
+        return 0;
+    }
+    
+    cout<<"\nDelay in samples: "<<pCombFilterProject->getDelayinSamples()<<endl<<endl;
+    
     pCombFilterProject->processAudio();
     
     pCombFilterProject->destroy(pCombFilterProject);
@@ -74,39 +106,5 @@ int main(int argc, char* argv[])
     cout<<"Success!\n";
   
     return 0;
-}
-
-void testZeroInputSignal(string sInputFilePath, string sInputFileName) {
-    
-    CombFilterProject *pCombFilterProject;
-    
-    float fFIRCoeff = 0.9;
-    float fIIRCoeff = 0.9;
-    int iSampleRate = 44100;
-    int iNumChannels = 2;
-    
-    float **zeroInput = new float *[iNumChannels];
-    for (int i=0; i<iNumChannels;i++) {
-        zeroInput[i] = new float[5*iSampleRate]; //5 seconds
-        for (int j=0; j<5*iSampleRate; j++) {
-            zeroInput[i][j] = 0;
-        }
-    }
-    
-    CombFilterProject::create(pCombFilterProject, 2048);
-    pCombFilterProject->init(sInputFilePath, sInputFileName, sInputFilePath, "zero_input_result_fir.wav", fFIRCoeff, 0, 15);
-//    pCombFilterProject->readAudio();
-    pCombFilterProject->processAudio();
-//    pCombFilterProject->writeAudio();
-    
-    pCombFilterProject->reset();
-    pCombFilterProject->init(sInputFilePath, sInputFileName, sInputFilePath, "zero_input_result_iir.wav", 0, fIIRCoeff, 15);
-//    pCombFilterProject->readAudio();
-    pCombFilterProject->processAudio();
-//    pCombFilterProject->writeAudio();
-    
-    
-    pCombFilterProject->destroy(pCombFilterProject);
-    
 }
 

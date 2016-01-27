@@ -32,7 +32,7 @@ CombFilterProject::~CombFilterProject()
 {
     this->reset ();
     
-    phAudioFile->destroy(phAudioFile);
+    phAudioInputFile->destroy(phAudioInputFile);
     phAudioFileOutput->destroy(phAudioFileOutput);
     
     delete pAudioProcessor;
@@ -90,8 +90,9 @@ Error_t CombFilterProject::destroy (CombFilterProject*& pCombFilterProject)
     
 }
 
-Error_t CombFilterProject::init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, int iDelayInMSecs, bool bWriteToTxtFile)
+Error_t CombFilterProject::init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, float fDelayInMSecs, bool bWriteToTxtFile)
 {
+    
     this->sInputFilePath = sInputFilePath;
     this->sInputFileName = sInputFileName;
     this->sOutputFilePath = sOutputFilePath;
@@ -100,37 +101,43 @@ Error_t CombFilterProject::init(string sInputFilePath, string sInputFileName, st
     
     this->fFIRCoeff = fFIRCoeff;
     this->fIIRCoeff = fIIRCoeff;
-    this->iDelayInMSecs = iDelayInMSecs;
+    this->fDelayInMSecs = fDelayInMSecs;
     
     // Create the input and output wave file for reading/writing
-    CAudioFileIf::create(phAudioFile);
+    CAudioFileIf::create(phAudioInputFile);
     CAudioFileIf::create(phAudioFileOutput);
     
     // Prepare the input wav file for reading
-    phAudioFile->openFile(sInputFilePath+sInputFileName, CAudioFileIf::kFileRead, 0);
-
-    phAudioFile->getLength(iInFileLength);
-    phAudioFile->getFileSpec(aInputFileSpec);
+    iFileOpenStatus = phAudioInputFile->openFile(sInputFilePath+sInputFileName, CAudioFileIf::kFileRead, 0);
+    if (iFileOpenStatus != 0) {
+        return kFileOpenError;
+    }
+    
+    phAudioInputFile->getLength(iInFileLength);
+    phAudioInputFile->getFileSpec(aInputFileSpec);
     aOutputFileSpec = aInputFileSpec;
     iNumChannels = aInputFileSpec.iNumChannels;
     iSampleRate = aInputFileSpec.fSampleRateInHz;
     
     // Prepare the output wav file for reading
-    phAudioFileOutput->openFile(sOutputFilePath+sOutputFileName, CAudioFileIf::kFileWrite,&aOutputFileSpec);
-    
-    iDelayInSamples = (float)iSampleRate*(float)iDelayInMSecs/1000.0f;
-    
-    if (iDelayInSamples > iBlockSize) {
-        int maxAllowedDelay = (float)iBlockSize*1000.0f/(float)iSampleRate;
-        cout<<"\nDelay should not be longer than "<<maxAllowedDelay<<"ms with current block size."<<endl;
-        
-        return kDelayTooLongError;
+    iFileOpenStatus = phAudioFileOutput->openFile(sOutputFilePath+sOutputFileName, CAudioFileIf::kFileWrite,&aOutputFileSpec);
+    if (iFileOpenStatus != 0) {
+        return kFileOpenError;
     }
+    
+    iDelayInSamples = (float)iSampleRate*fDelayInMSecs/1000.0f;
     
     if (bWriteToTxtFile) {
         //Create file
         isWriteToTxtFileEnabled = true;
         ofCSVfile.open(sOutputFilePath+sOutputTextFileName);
+    }
+    
+    if (fDelayInMSecs > fMaxAllowedDelay) {
+//        float fMaxAllowedDelay = (float)iBlockSize*1000.0f/(float)iSampleRate;
+        cout<<"\nDelay should not be longer than "<<fMaxAllowedDelay<<" ms."<<endl;
+        
+        return kDelayTooLongError;
     }
   
     return kNoError;
@@ -141,12 +148,12 @@ Error_t CombFilterProject::processAudio() {
     pAudioProcessor = new ProcessAudio(iSampleRate, iBlockSize);
     pAudioProcessor->SetFilterProperties(fFIRCoeff, fIIRCoeff, iDelayInSamples, iNumChannels);
     if(isWriteToTxtFileEnabled) {
-        pAudioProcessor->blockAndProcessAudio(phAudioFile, phAudioFileOutput, &ofCSVfile);
+        pAudioProcessor->blockAndProcessAudio(phAudioInputFile, phAudioFileOutput, &ofCSVfile);
     } else {
-        pAudioProcessor->blockAndProcessAudio(phAudioFile, phAudioFileOutput);
+        pAudioProcessor->blockAndProcessAudio(phAudioInputFile, phAudioFileOutput);
     }
     
-    phAudioFile->closeFile();
+    phAudioInputFile->closeFile();
     phAudioFileOutput->closeFile();
     
     return kNoError;
@@ -160,22 +167,30 @@ Error_t CombFilterProject::reset ()
 {
     // reset buffers and variables to default values
     
-    fFIRCoeff = 0;
-    fIIRCoeff = 0;
-    iDelayInMSecs = 0;
+    fFIRCoeff = 0.0;
+    fIIRCoeff = 0.0;
+    fDelayInMSecs = 0.0;
     iDelayInSamples = 0;
     iSampleRate = 44100;
     iBlockSize = 1024;
+    fMaxAllowedDelay = 2000; //2 seconds
     
     iInFileLength = 0;
     iNumChannels = 1;
-    ppfAudioData = 0;
-    phAudioFile = 0;
+    phAudioInputFile = 0;
     phAudioFileOutput = 0;
     aInputFileSpec = (CAudioFileIf::FileSpec_t){};
     aOutputFileSpec = (CAudioFileIf::FileSpec_t){};
     
     return kNoError;
+}
+
+void CombFilterProject::setMaxAllowedDelay(float fMaxDelay) {
+    fMaxAllowedDelay = fMaxDelay;
+}
+
+float CombFilterProject::getMaxAllowedDelay() {
+    return fMaxAllowedDelay;
 }
 
 

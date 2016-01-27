@@ -45,13 +45,12 @@ public:
     static Error_t create (CombFilterProject*& pCKortIf, int iBlockSize);
     static Error_t destroy (CombFilterProject*& pCKortIf);
     
-    Error_t init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, int iDelayInMSecs, bool bWriteToTxtFile = false);
+    Error_t init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, float fDelayInMSecs, bool bWriteToTxtFile = false);
     Error_t reset ();
-//    Error_t readAudio();
     Error_t processAudio();
-//    Error_t writeAudio();
-    Error_t writeAudioToText(string fileName);
     int getDelayinSamples();
+    void setMaxAllowedDelay(float fMaxDelay);
+    float getMaxAllowedDelay();
     
     
 private:
@@ -64,18 +63,19 @@ private:
     float fFIRCoeff;
     float fIIRCoeff;
     int iDelayInSamples;
-    int iDelayInMSecs;
+    float fDelayInMSecs;
     int iSampleRate;
     int iBlockSize;
+    int iNumChannels;
     bool isWriteToTxtFileEnabled;
+    int iFileOpenStatus;
+    float fMaxAllowedDelay; 
     
     ProcessAudio *pAudioProcessor;
     
     long long iInFileLength;
-    float **ppfAudioData;
-    CAudioFileIf *phAudioFile;
+    CAudioFileIf *phAudioInputFile;
     CAudioFileIf *phAudioFileOutput;
-    int iNumChannels;
     CAudioFileIf::FileSpec_t aInputFileSpec;
     CAudioFileIf::FileSpec_t aOutputFileSpec;
     ofstream ofCSVfile;
