@@ -20,13 +20,11 @@ static const int    CombFilterProject_VERSION_MAJOR = 1,
                     CombFilterProject_VERSION_MINOR = 1,
                     CombFilterProject_VERSION_PATCH = 1;
 
-CombFilterProject::CombFilterProject(int iBlockSize, int iOverlapRatio)
+CombFilterProject::CombFilterProject(int iBlockSize)
 {
-    // this never hurts
-    this->reset ();
+    this->reset();
     
     this->iBlockSize = iBlockSize;
-    this->iOverlapRatio = iOverlapRatio;
 }
 
 
@@ -36,12 +34,6 @@ CombFilterProject::~CombFilterProject()
     
     phAudioFile->destroy(phAudioFile);
     phAudioFileOutput->destroy(phAudioFileOutput);
-    
-    
-    for(int i = 0; i < iNumChannels; i++) {
-        delete [] ppfAudioData[i];
-    }
-    delete [] ppfAudioData;
     
     delete pAudioProcessor;
     pAudioProcessor = 0;
@@ -74,9 +66,9 @@ const char*  CombFilterProject::getBuildDate ()
     return kCombFilterProjectBuildDate;
 }
 
-Error_t CombFilterProject::create(CombFilterProject*& pCombFilterProject, int iBlockSize, int iOverlapRatio)
+Error_t CombFilterProject::create(CombFilterProject*& pCombFilterProject, int iBlockSize)
 {
-    pCombFilterProject = new CombFilterProject(iBlockSize,iOverlapRatio);
+    pCombFilterProject = new CombFilterProject(iBlockSize);
     
     if (!pCombFilterProject)
         return kUnknownError;
@@ -98,12 +90,13 @@ Error_t CombFilterProject::destroy (CombFilterProject*& pCombFilterProject)
     
 }
 
-Error_t CombFilterProject::init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, int iDelayInMSecs)
+Error_t CombFilterProject::init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, int iDelayInMSecs, bool bWriteToTxtFile)
 {
     this->sInputFilePath = sInputFilePath;
     this->sInputFileName = sInputFileName;
     this->sOutputFilePath = sOutputFilePath;
     this->sOutputFileName = sOutputFileName;
+    sOutputTextFileName = "output.csv";
     
     this->fFIRCoeff = fFIRCoeff;
     this->fIIRCoeff = fIIRCoeff;
@@ -112,23 +105,18 @@ Error_t CombFilterProject::init(string sInputFilePath, string sInputFileName, st
     // Create the input and output wave file for reading/writing
     CAudioFileIf::create(phAudioFile);
     CAudioFileIf::create(phAudioFileOutput);
-  
-    return kNoError;
-}
-
-Error_t CombFilterProject::readAudio() {
-    // Open the input wav file for reading
-    phAudioFile->openFile(sInputFilePath+sInputFileName, CAudioFileIf::kFileRead, 0);
     
-    // Allocate memory
+    // Prepare the input wav file for reading
+    phAudioFile->openFile(sInputFilePath+sInputFileName, CAudioFileIf::kFileRead, 0);
+
     phAudioFile->getLength(iInFileLength);
     phAudioFile->getFileSpec(aInputFileSpec);
+    aOutputFileSpec = aInputFileSpec;
     iNumChannels = aInputFileSpec.iNumChannels;
     iSampleRate = aInputFileSpec.fSampleRateInHz;
-    ppfAudioData = new float *[iNumChannels];
-    for(int i = 0; i < iNumChannels; i++){
-        ppfAudioData[i] = new float[iInFileLength];
-    }
+    
+    // Prepare the output wav file for reading
+    phAudioFileOutput->openFile(sOutputFilePath+sOutputFileName, CAudioFileIf::kFileWrite,&aOutputFileSpec);
     
     iDelayInSamples = (float)iSampleRate*(float)iDelayInMSecs/1000.0f;
     
@@ -139,47 +127,27 @@ Error_t CombFilterProject::readAudio() {
         return kDelayTooLongError;
     }
     
-    // Get audio data
-    phAudioFile->readData(ppfAudioData, iInFileLength);
-    
-    // Done reading safe to close
-    phAudioFile->closeFile();
-    
+    if (bWriteToTxtFile) {
+        //Create file
+        isWriteToTxtFileEnabled = true;
+        ofCSVfile.open(sOutputFilePath+sOutputTextFileName);
+    }
+  
     return kNoError;
 }
 
 Error_t CombFilterProject::processAudio() {
     
-    pAudioProcessor = new ProcessAudio(iSampleRate, iBlockSize, iBlockSize/iOverlapRatio);
-    pAudioProcessor->SetFilterProperties(fFIRCoeff, fIIRCoeff, iDelayInSamples);
-    pAudioProcessor->blockAndProcessAudio(ppfAudioData, iInFileLength, iNumChannels);
-    
-    return kNoError;
-}
-
-Error_t CombFilterProject::writeAudio() {
-    aOutputFileSpec = aInputFileSpec;
-    phAudioFileOutput->openFile(sOutputFilePath+sOutputFileName, CAudioFileIf::kFileWrite,&aOutputFileSpec);
-    phAudioFileOutput->writeData(ppfAudioData, iInFileLength);
-    phAudioFileOutput->closeFile();
-    
-    return kNoError;
-}
-
-Error_t CombFilterProject::writeAudioToText(string fileName) {
-
-    //Create file
-    ofCSVfile.open(sOutputFilePath+fileName);
-    
-    for (int i=0; i<iInFileLength; i++) {
-        for (int j=0 ; j<iNumChannels; j++) {
-            if (j!=0) {
-                ofCSVfile << ",";
-            }
-            ofCSVfile << ppfAudioData[j][i];
-        }
-        ofCSVfile <<"\n";
+    pAudioProcessor = new ProcessAudio(iSampleRate, iBlockSize);
+    pAudioProcessor->SetFilterProperties(fFIRCoeff, fIIRCoeff, iDelayInSamples, iNumChannels);
+    if(isWriteToTxtFileEnabled) {
+        pAudioProcessor->blockAndProcessAudio(phAudioFile, phAudioFileOutput, &ofCSVfile);
+    } else {
+        pAudioProcessor->blockAndProcessAudio(phAudioFile, phAudioFileOutput);
     }
+    
+    phAudioFile->closeFile();
+    phAudioFileOutput->closeFile();
     
     return kNoError;
 }
@@ -198,7 +166,6 @@ Error_t CombFilterProject::reset ()
     iDelayInSamples = 0;
     iSampleRate = 44100;
     iBlockSize = 1024;
-    iOverlapRatio = 1;
     
     iInFileLength = 0;
     iNumChannels = 1;

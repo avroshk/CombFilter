@@ -42,14 +42,14 @@ public:
     static const int  getVersion (const Version_t eVersionIdx);
     static const char* getBuildDate ();
     
-    static Error_t create (CombFilterProject*& pCKortIf, int iBlockSize, int iOverlapRatio);
+    static Error_t create (CombFilterProject*& pCKortIf, int iBlockSize);
     static Error_t destroy (CombFilterProject*& pCKortIf);
     
-    Error_t init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, int iDelayInMSecs);
+    Error_t init(string sInputFilePath, string sInputFileName, string sOutputFilePath, string sOutputFileName, float fFIRCoeff, float fIIRCoeff, int iDelayInMSecs, bool bWriteToTxtFile = false);
     Error_t reset ();
-    Error_t readAudio();
+//    Error_t readAudio();
     Error_t processAudio();
-    Error_t writeAudio();
+//    Error_t writeAudio();
     Error_t writeAudioToText(string fileName);
     int getDelayinSamples();
     
@@ -59,6 +59,7 @@ private:
     string sOutputFilePath;
     string sInputFileName;
     string sOutputFileName;
+    string sOutputTextFileName;
     
     float fFIRCoeff;
     float fIIRCoeff;
@@ -66,7 +67,7 @@ private:
     int iDelayInMSecs;
     int iSampleRate;
     int iBlockSize;
-    int iOverlapRatio;
+    bool isWriteToTxtFileEnabled;
     
     ProcessAudio *pAudioProcessor;
     
@@ -81,7 +82,7 @@ private:
 
    
 protected:
-    CombFilterProject(int,int);
+    CombFilterProject(int);
     virtual ~CombFilterProject();
 
 };

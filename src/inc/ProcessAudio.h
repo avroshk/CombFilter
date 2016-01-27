@@ -10,24 +10,27 @@
 #define ProcessAudio_hpp
 
 #include <stdio.h>
+#include "AudioFileIf.h"
 #include "FilterAudio.h"
 
 class ProcessAudio {
 public:
-    ProcessAudio(int sampleRate, int blockSize, int hopSize); //constructor
+    ProcessAudio(int sampleRate, int blockSize); //constructor
+    ProcessAudio(int sampleRate, int blockSize, int hopSize); //contructor - not used in this project
     ~ProcessAudio(); //destructor
     
-    void blockAndProcessAudio(float **input, int length, int numChannels);
-    void SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples);
+    void blockAndProcessAudio(CAudioFileIf *phAudioInputFile, CAudioFileIf *phAudioOutputFile, std::ofstream *txtFile = 0);
+    void SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, int iNumChannels);
     
 private:
     int blockSize;
     int hopSize;
     int sampleRate;
-    int iNumBlocks;
-    float** block;
+    float** ppfBlock;
     
+    CAudioFileIf::FileSpec_t aFileSpec;
     FilterAudio *pFilter;
+    
 };
 
 

@@ -8,12 +8,18 @@
 
 
 #include <math.h>
-//#include <algorithm>    // std::copy
 #include <iostream>
 
 #include "ProcessAudio.h"
 
 //constructor
+ProcessAudio::ProcessAudio(int sampleRate, int blockSize) {
+    //set block size, sample rate and stuff
+    this->blockSize = blockSize;
+    this->sampleRate = sampleRate;
+
+}
+
 ProcessAudio::ProcessAudio(int sampleRate, int blockSize, int hopSize) {
     //set block size, sample rate and stuff
     this->blockSize = blockSize;
@@ -28,71 +34,54 @@ ProcessAudio::~ProcessAudio() {
     pFilter = 0;
 }
 
-void ProcessAudio::SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples) {
-    pFilter = new FilterAudio(fFIRCoeff,fIIRCoeff,iDelayInSamples);
+void ProcessAudio::SetFilterProperties(float fFIRCoeff, float fIIRCoeff, int iDelayInSamples, int iNumChannels) {
+    pFilter = new FilterAudio(fFIRCoeff,fIIRCoeff,iDelayInSamples, iNumChannels);
 }
 
-void ProcessAudio::blockAndProcessAudio(float **input, int inputLength, int iNumChannels) {
+void ProcessAudio::blockAndProcessAudio(CAudioFileIf *phAudioInputFile, CAudioFileIf *phAudioOutputFile, std::ofstream *txtFile) {
     
     // Check if Filter properties have been set before proceeding
     if (pFilter) {
         
-        //Allocate memory block for the output (same as length of input)
-        ////Future task - we can try inplace substitution instead
-//        float **output = new float*[iNumChannels];
-//        for (int i=0; i<iNumChannels; i++) {
-//            output[i] = new float[inputLength];
-//        }
-        
-        //Number of blocks
-        iNumBlocks = ceil(inputLength/hopSize);
-        
+        phAudioInputFile->getFileSpec(aFileSpec);
+    
         //Allocate single block for processing
-        block = new float *[iNumChannels];
-        for (int k=0; k<iNumChannels; k++) {
-            block[k] = new float[inputLength];
+        ppfBlock = new float *[aFileSpec.iNumChannels];
+        for (int k=0; k<aFileSpec.iNumChannels; k++) {
+            ppfBlock[k] = new float[blockSize];
         }
         
-        //Iterate through every block
-        for (int i=0; i<iNumBlocks-3; i++) {
+        while (!phAudioInputFile->isEof()) {
             
-            for (int n=0; n<iNumChannels; n++) {
-                // Last block edge case
-                if (i*hopSize+blockSize > inputLength) {
-                    memcpy(block[n], &input[n][i*hopSize], (inputLength-i*hopSize)  * sizeof(float));
-                }
-                else {
-                    memcpy(block[n], &input[n][i*hopSize], blockSize * sizeof(float));
-                }
-            }
+            long long iNumFrames = blockSize;
+            phAudioInputFile->readData(ppfBlock, iNumFrames);
             
             // Call comb filter
-            block = pFilter->combFilterBlock(block, blockSize, iNumChannels);
-            int iDelayLength = pFilter->getDelayInSamples();
-            int iFiniteOffset = 1;
+            ppfBlock = pFilter->combFilterBlock(ppfBlock, blockSize, aFileSpec.iNumChannels);
             
-            // Check whether to offset by delayInSamples
-            if( pFilter->getFIRCoeff() > 0){
-                iFiniteOffset = 0;
-            }
-            
-            // Unblock
-            for (int n=0; n<iNumChannels; n++) {
-                // Last block edge case
-                if (i*hopSize+blockSize > inputLength) {
-                    memcpy(&input[n][i*hopSize], &block[n][0], (inputLength-(i*hopSize)) * sizeof(float));
-                } else {
-                    memcpy(&input[n][i*hopSize+iFiniteOffset*iDelayLength], &block[n][iDelayLength], (hopSize) * sizeof(float));
+            //Write to output file
+            phAudioOutputFile->writeData(ppfBlock, blockSize);
+           
+            if (txtFile) {
+                for (int i=0; i<blockSize; i++) {
+                    for (int j=0 ; j<aFileSpec.iNumChannels; j++) {
+                        if (j!=0) {
+                            *txtFile << ",";
+                        }
+                        *txtFile << ppfBlock[j][i];
+                    }
+                    *txtFile <<"\n";
                 }
-            
             }
+            
+        
         }
         
         //free memory allocated for block
-        for (int k=0; k<iNumChannels; k++) {
-            delete [] block[k];
+        for (int k=0; k<aFileSpec.iNumChannels; k++) {
+            delete [] ppfBlock[k];
         }
-        delete [] block;
+        delete [] ppfBlock;
             
     }
 }
