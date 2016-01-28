@@ -134,7 +134,7 @@ Error_t CombFilterProject::init(string sInputFilePath, string sInputFileName, st
     }
     
     if (fDelayInMSecs > fMaxAllowedDelay) {
-//        float fMaxAllowedDelay = (float)iBlockSize*1000.0f/(float)iSampleRate;
+        
         cout<<"\nDelay should not be longer than "<<fMaxAllowedDelay<<" ms."<<endl;
         
         return kDelayTooLongError;

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <math.h>
+#include <cmath>
 #include "CombFilterProject.h"
 #include "FilterAudio.h"
 
@@ -7,7 +8,12 @@
 
 using namespace std;
 
+//function
 int testZeroInput();
+float *sinOsc(float, float, float, unsigned);
+int testFIRFeedforward();
+int testIIRFeedforward();
+
 
 // main function
 int main(int argc, char* argv[])
@@ -109,6 +115,8 @@ int main(int argc, char* argv[])
     cout<<"Success!\n";
     
     testZeroInput();
+    testFIRFeedforward();
+    testIIRFeedforward();
   
     return 0;
 }
@@ -121,7 +129,7 @@ int testZeroInput() {
     int iNumChannels = 1;
     int iBlockSize = 1024;
     int iNumBlocks = 50; //Test for 10 blocks
-    float **ppfAudioData = new float *[iNumChannels];;
+    float **ppfAudioData = new float *[iNumChannels];
     
     for (int n=0; n<iNumChannels; n++) {
         ppfAudioData[n] = new float[iBlockSize];
@@ -137,7 +145,7 @@ int testZeroInput() {
         
         for (int n=0; n<iNumChannels; n++) {
             for (int m=0; m<iBlockSize; m++) {
-                if (ppfAudioData[n][m] != 0) {
+                if (ppfAudioData[n][m] > 0.001) {
                     
                     cout<<"\nZero Input Test: failed!\n";
                     return -1;
@@ -151,9 +159,145 @@ int testZeroInput() {
     return 0;
 }
 
+int testFIRFeedforward() {
+    
+    FilterAudio *pFilter;
+    float fFIRCoeff = 1.0;
+    float fIIRCoeff = 0.0;
+    int iDelayInSamples = 50;
+    int iNumChannels = 1;
+    int iBlockSize = 1024;
+    int iNumBlocks;
+    
+    float fFreq = 441.0; //Hz
+    float fTimeInSecs = 2.0;
+    unsigned uSampleRate = 44100;
+    
+    float **buffer = new float *[iNumChannels];
+    for (int i=0;i<iNumChannels ;i++) {
+        buffer[i] = new float[iBlockSize];
+    }
+    
+    pFilter = new FilterAudio(fFIRCoeff, fIIRCoeff, iDelayInSamples, iNumChannels);
+
+    
+    float *sinWave = sinOsc(fFreq, 1.0, fTimeInSecs, uSampleRate);
+    
+    int iLengthInSamples = ceil(fTimeInSecs * uSampleRate);
+ 
+    iNumBlocks = ceil((float)iLengthInSamples/(float)iBlockSize);
+    
+    for (int c=0; c<iNumChannels; c++) {
+        
+        int start = 0;
+        
+        for (int n=0; n<iNumBlocks-1; n++) {
+            
+            if (n*iBlockSize >  iLengthInSamples) {
+                memcpy(buffer[c], &sinWave[n*iBlockSize], (iLengthInSamples-n*iBlockSize)*sizeof(float));
+            }
+            else {
+                memcpy(buffer[c], &sinWave[n*iBlockSize], iBlockSize*sizeof(float));
+            }
+            
+            buffer = pFilter->combFilterBlock(buffer, iBlockSize, iNumChannels);
+
+            start = 0;
+            if (n == 0){
+                start = iDelayInSamples+1;
+            }
+            
+            for (int m=start; m<iBlockSize; m++) {
+                if (std::abs(buffer[c][m]) > 0.001) {
+                    cout<<"\nFIR Feedforward Test: failed!\n";
+                    return -1;
+                }
+            }
+            
+        }
+        
+        cout<<"\nFIR Feedforward Test: Success!\n";
+    }
+    
+    return 0;
+}
+
+int testIIRFeedforward() {
+    
+    FilterAudio *pFilter;
+    float fFIRCoeff = 0.0;
+    float fIIRCoeff = 0.1;
+    int iDelayInSamples = 100;
+    int iNumChannels = 1;
+    int iBlockSize = 1024;
+    int iNumBlocks;
+    
+    float fFreq = 441.0; //Hz
+    float fTimeInSecs = 2.0;
+    unsigned uSampleRate = 44100;
+    
+    float **buffer = new float *[iNumChannels];
+    for (int i=0;i<iNumChannels ;i++) {
+        buffer[i] = new float[iBlockSize];
+    }
+    
+    float **origBuffer = new float *[iNumChannels];
+    for (int i=0;i<iNumChannels ;i++) {
+        origBuffer[i] = new float[iBlockSize];
+    }
+    
+    
+    pFilter = new FilterAudio(fFIRCoeff, fIIRCoeff, iDelayInSamples, iNumChannels);
+    
+    
+    float *sinWave = sinOsc(fFreq, 1.0, fTimeInSecs, uSampleRate);
+    
+    int iLengthInSamples = ceil(fTimeInSecs * uSampleRate);
+    
+    iNumBlocks = ceil((float)iLengthInSamples/(float)iBlockSize);
+    
+//    int iPeriodInSamples = (int)uSampleRate/fFreq;
+    
+    for (int c=0; c<iNumChannels; c++) {
+        
+        for (int n=0; n<iNumBlocks-1; n++) {
+            
+            if (n*iBlockSize >  iLengthInSamples) {
+                memcpy(buffer[c], &sinWave[n*iBlockSize], (iLengthInSamples-n*iBlockSize)*sizeof(float));
+            }
+            else {
+                memcpy(buffer[c], &sinWave[n*iBlockSize], iBlockSize*sizeof(float));
+                memcpy(origBuffer[c], &sinWave[n*iBlockSize], iBlockSize*sizeof(float));
+            }
+            
+            buffer = pFilter->combFilterBlock(buffer, iBlockSize, iNumChannels);
+            
+            float* temp = buffer[c];
+            float* origTemp = origBuffer[c];
+//            float* diff = new float[iBlockSize];
+            
+//            for (int m=iPeriodInSamples+iPeriodInSamples/4; m<iBlockSize; m=m+iPeriodInSamples) {
+//                
+//                if (buffer[c][m] <= origBuffer[c][m]) {
+//                    cout<<"\IIR Feedforward Test: failed!\n";
+//                    return -1;
+//                }
+//
+//                
+//            }
+            
+        }
+        
+        cout<<"\nIIR Feedforward Test: Success!\n";
+    }
+    
+    return 0;
+}
+
+
 float *sinOsc(float fFreq, float fAmp, float fLengthInSec, unsigned uFs){
     
-    float pi = 3.14159265;
+    float pi = 3.1415926535897932346;
 
     int lengthInSamples = ceil(fLengthInSec * uFs);
     float* fSineWave = new float[lengthInSamples];
@@ -164,6 +308,5 @@ float *sinOsc(float fFreq, float fAmp, float fLengthInSec, unsigned uFs){
     }
     
     return fSineWave;
-    
 }
 
