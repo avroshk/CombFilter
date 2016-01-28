@@ -10,7 +10,6 @@ Our class comb filter contained in the class FilterAudio is called from ProcessA
 
 We've set our maximum delay to 2s because a "comb filter" will simply become a delay if the delay time is large. The property fMaxAllowedDelay can be updated. Our processing function is in place, so the delay line can be larger than the block size. 
 
-
 2. <b>Implement FIR comb filter (DAFX: fircomb.m) [15]</b> See FilterAudio::combFilterBlock
 3. <b>Implement IIR comb filter (DAFX: iircomb.m)  [15]</b> See FilterAudio::combFilterBlock
 4. <b>Implement main command line function  [12]</b> 
@@ -20,11 +19,24 @@ If running the program with too few or too many arguments, we tell you what argu
 
 5. <b>verify functionality for 2 different input audio files by comparison with matlab   [08]</b>
 
-See directory "/Matlab resource/test"
+See directory "/Matlab resource/test". We optionally write the output file to a csv file. We then compared the result to the output of the Matlab function. Our results were accurate. 
 
 6. <b>write the following test functions to ensure functionality [30]</b> <br />
-    a. zero output if input frequeny matches feedforward (FIR)         
-    b. magnitude increase/decrease if input frequency matches feedback (IIR)        
-    c. varying input block size (FIR & IIR)                                                                              
-    d. zero input signal (FIR & IIR)                                                                                        
-    e. additional test to verify correct functionality       
+    a. zero output if input frequeny matches feedforward (FIR) 
+
+    Function testFIRFeedforward test a sinewave with a frequency of 441 Hz at a sample rate of 44.1k. Using a delay of 50 samples, we test for destructive interference such that the output is zero after the first 50 samples. Note, we haven't used a very good solution to check floating point zero value. To be developed in the future.
+
+    b. magnitude increase/decrease if input frequency matches feedback (IIR)  
+
+    Functions testIIRConstructiveFeedforward and testIIRDestructiveFeedforward test magnitude increase and decrease respectively. Similar to the FIR, destructive uses a 50 sample delay, we check for a smaller maximum amplitude after the first 50 samples. For constructive, we used a delay of 100 samples and checked for an increase in magnitude.
+
+    c. varying input block size (FIR & IIR)  
+
+    Function testDifferntBlockSizes checks various block sizes for FIR and IIR.                                                                            
+    d. zero input signal (FIR & IIR)  
+
+    Function testZeroInput tests both FIR and IIR at the same time using FIR gain of 1.0 and IIR gain of 0.5.
+
+    e. additional test to verify correct functionality 
+
+    We additionally wrote testZeroDelay, testFIRImpulseResponse and testIIRImpulseResponse to verify our results.      

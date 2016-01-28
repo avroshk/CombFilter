@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
 int testZeroInput() {
     FilterAudio *pFilter;
     float fFIRCoeff = 1.0;
-    float fIIRCoeff = 0.0;
+    float fIIRCoeff = 0.5;
     int iDelayInSamples = 10;
     int iNumChannels = 1;
     int iBlockSize = 1024;
